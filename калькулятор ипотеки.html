@@ -1,0 +1,221 @@
+<!-- index.html -->
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Калькулятор ипотеки</title>
+</head>
+
+<body>
+
+    <div id="app">
+        <h1>Ипотечный калькулятор</h1>
+
+        <label for="propertyCost">Стоимость недвижимости:</label>
+        <input type="number" id="propertyCost" v-model="propertyCost">
+
+        <label for="downPayment">Первоначальный взнос:</label>
+        <input type="number" id="downPayment" v-model="downPayment">
+
+        <label for="selectedProgram">Программа:</label>
+        <select id="selectedProgram" v-model="selectedProgram">
+      <option v-for="program in programs" :value="program.id">{{ program.name }}</option>
+    </select>
+
+        <label for="clientOfProstoBank">Вы являетесь клиентом ПростоБанка?</label>
+        <input type="checkbox" id="clientOfProstoBank" v-model="isClientOfProstoBank">
+
+        <label for="maternityCapital">Материнский капитал:</label>
+        <input type="number" id="maternityCapital" v-model="maternityCapital" :disabled="useMaternityCapital">
+
+        <label for="personalFunds">Личные средства:</label>
+        <input type="number" id="personalFunds" v-model="personalFunds" :disabled="useMaternityCapital">
+
+        <label for="lifeInsurance">Страхование жизни и здоровья:</label>
+        <input type="checkbox" id="lifeInsurance" v-model="hasLifeInsurance">
+
+        <label for="eRegistration">Электронная регистрация сделки:</label>
+        <input type="checkbox" id="eRegistration" v-model="hasERegistration">
+
+        <button @click="calculateMortgage">Рассчитать</button>
+
+        <h2>Результаты</h2>
+
+        <p>Ежемесячный платеж: {{ monthlyPayment }}</p>
+        <p>Процентная ставка: {{ interestRate }}%</p>
+        <p>Сумма ипотеки: {{ mortgageAmount }}</p>
+        <p>Налоговый вычет: {{ taxDeduction }}</p>
+        <p>Необходимый доход: {{ requiredIncome }}</p>
+    </div>
+
+
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.min.js"></script>
+    <script>
+        new Vue({
+            el: '#app',
+            data() {
+                return {
+                    propertyCost: null,
+                    downPayment: null,
+                    selectedProgram: null,
+                    programs: [{
+                        id: 1,
+                        name: 'Базовая программа',
+                        rate: 10.9
+                    }, {
+                        id: 2,
+                        name: 'Дальневосточная',
+                        rate: 1.7
+                    }, {
+                        id: 3,
+                        name: 'Военная',
+                        rate: 10.3
+                    }, {
+                        id: 4,
+                        name: 'Госсертификаты',
+                        rate: 1.7
+                    }, {
+                        id: 5,
+                        name: 'Без первоначального взноса',
+                        rate: 11.7
+                    }],
+                    clientOfProstoBank: false,
+                    useMaternityCapital: false,
+                    useLifeInsurance: false,
+                    useElectronicRegistration: false,
+                    monthlyPayment: null,
+                    interestRate: null,
+                    mortgageAmount: null,
+                    taxDeduction: null,
+                    requiredIncome: null
+                };
+            },
+            computed: {
+                monthlyPayment() {
+                    // Расчет ежемесячного платежа
+                    const loanAmount = this.propertyCost - this.downPayment;
+                    const interestRate = this.getSelectedInterestRate();
+                    const loanTerm = 30; // Здесь можно задать нужный срок ипотеки в годах
+
+                    const monthlyRate = interestRate / 100 / 12;
+                    const totalPayments = loanTerm * 12;
+
+                    const monthlyPayment =
+                        (loanAmount * monthlyRate) /
+                        (1 - Math.pow(1 + monthlyRate, -totalPayments));
+
+                    return monthlyPayment.toFixed(2);
+                },
+                interestRate() {
+                    // Расчет процентной ставки с учетом выбранных кнопок
+                    let selectedProgram = this.getSelectedProgram();
+                    let interestRate = selectedProgram ? selectedProgram.rate : 0;
+
+                    if (this.clientOfProstoBank) {
+                        interestRate -= 1;
+                    }
+
+                    if (this.useLifeInsurance) {
+                        interestRate -= 1;
+                    }
+
+                    if (this.useElectronicRegistration) {
+                        interestRate -= 0.3;
+                    }
+
+                    return interestRate.toFixed(2);
+                },
+                mortgageAmount() {
+                    // Расчет суммы ипотеки
+                    const loanAmount = this.propertyCost - this.downPayment;
+
+                    if (this.useMaternityCapital) {
+                        return loanAmount - this.maternityCapital;
+                    }
+
+                    return loanAmount;
+                },
+                taxDeduction() {
+                    return 1000; // Пример расчета налогового вычета
+                },
+                requiredIncome() {
+                    const monthlyPayment = parseFloat(this.monthlyPayment);
+                    const incomeToPaymentRatio = 0.45; // Коэффициент платежа к доходу
+
+                    return (monthlyPayment / incomeToPaymentRatio).toFixed(2);
+                }
+            },
+            methods: {
+                calculateMortgage() {
+                    this.monthlyPayment = this.calculateMonthlyPayment();
+                    this.interestRate = this.calculateInterestRate();
+                    this.mortgageAmount = this.calculateMortgageAmount();
+                    this.taxDeduction = this.calculateTaxDeduction();
+                    this.requiredIncome = this.calculateRequiredIncome();
+                },
+                calculateMonthlyPayment() {
+                    // Расчет ежемесячного платежа
+                    // Ваш код здесь
+                },
+                calculateInterestRate() {
+                    let interestRate = this.getSelectedInterestRate();
+
+                    if (this.clientOfProstoBank) {
+                        interestRate -= 1;
+                    }
+
+                    if (this.useLifeInsurance) {
+                        interestRate -= 1;
+                    }
+
+                    if (this.useElectronicRegistration) {
+                        interestRate -= 0.3;
+                    }
+
+                    return interestRate.toFixed(2);
+                },
+                calculateMortgageAmount() {
+                    const loanAmount = this.propertyCost - this.downPayment;
+
+                    let mortgageAmount = loanAmount;
+
+                    if (this.useMaternityCapital) {
+                        mortgageAmount -= this.maternityCapital;
+                    }
+
+                    return mortgageAmount.toFixed(2);
+                },
+                calculateTaxDeduction() {
+                    return 1000; // Пример расчета налогового вычета
+                },
+                calculateRequiredIncome() {
+                    const monthlyPayment = parseFloat(this.monthlyPayment);
+                    const incomeToPaymentRatio = 0.45; // Коэффициент платежа к доходу
+
+                    return (monthlyPayment / incomeToPaymentRatio).toFixed(2);
+                },
+                getSelectedInterestRate() {
+                    // Здесь должна быть реальная логика получения выбранной процентной ставки
+                    // на основе программы ипотеки
+
+                    // Пример реализации для выбранной программы
+                    const selectedProgram = this.programs.find(
+                        program => program.id === this.selectedProgram
+                    );
+
+                    if (selectedProgram) {
+                        return selectedProgram.rate;
+                    }
+
+                    return 0;
+                },
+            }
+        })
+    </script>
+
+
+</body>
+
+</html>
